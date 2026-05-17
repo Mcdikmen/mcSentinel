@@ -3,7 +3,7 @@ game 'gta5'
 
 name 'mcSentinel'
 description 'FiveM admin monitoring system — NUI + oxmysql'
-version '1.0.2'
+version '1.0.0'
 author 'Mcdikmen'
 
 lua54 'yes'
