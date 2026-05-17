@@ -215,6 +215,12 @@ Sentinel_Push('admin_abuse', playerId, {
 }, true)
 ```
 
+## Contact
+
+- **Discord Server:** [discord.gg/de8fABdPyf](https://discord.gg/de8fABdPyf)
+- **Discord:** mcdikmen
+- **Email:** muratcan.dikmen@outlook.com
+
 ## License
 
 MIT © Mcdikmen — free to use, modify, and distribute.

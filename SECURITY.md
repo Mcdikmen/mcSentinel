@@ -13,6 +13,8 @@ If you discover a security vulnerability, **please do not open a public issue.**
 Report it privately via one of the following:
 
 - **GitHub:** Open a [Security Advisory](https://github.com/Mcdikmen/mcSentinel/security/advisories/new)
+- **Discord Server:** [discord.gg/de8fABdPyf](https://discord.gg/de8fABdPyf)
+- **Discord:** mcdikmen
 - **Email:** muratcan.dikmen@outlook.com
 
 Please include:
