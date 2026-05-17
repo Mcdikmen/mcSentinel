@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mcSentinel</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="root" class="hidden">
+
+    <!-- Sidebar -->
+    <nav id="sidebar">
+      <div class="logo">
+        <span class="logo-icon">S</span>
+        <span class="logo-text">mcSentinel</span>
+      </div>
+      <ul class="nav-list">
+        <li class="nav-item active" data-page="overview">◈ Overview</li>
+        <li class="nav-item" data-page="players">◉ Players</li>
+        <li class="nav-item" data-page="logs">≡ Logs</li>
+      </ul>
+      <button id="close-btn">✕ Close</button>
+    </nav>
+
+    <!-- Main content -->
+    <main id="content">
+
+      <!-- Overview -->
+      <section id="page-overview" class="page active">
+        <h1 class="page-title">Overview</h1>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-label">Online Now</div><div class="stat-value" id="stat-online">—</div></div>
+          <div class="stat-card"><div class="stat-label">Total Players</div><div class="stat-value" id="stat-players">—</div></div>
+          <div class="stat-card alert"><div class="stat-label">Flagged Events</div><div class="stat-value" id="stat-alerts">—</div></div>
+          <div class="stat-card"><div class="stat-label">Total Events</div><div class="stat-value" id="stat-events">—</div></div>
+        </div>
+        <h2 class="section-title">Recent Alerts</h2>
+        <div id="alert-feed" class="feed"></div>
+      </section>
+
+      <!-- Players -->
+      <section id="page-players" class="page">
+        <h1 class="page-title">Players</h1>
+        <div class="toolbar">
+          <input id="player-search" class="input" placeholder="Search by name or license…" />
+          <button class="btn" id="player-search-btn">Search</button>
+        </div>
+        <table class="table">
+          <thead><tr><th>Status</th><th>Name</th><th>License</th><th>IP</th><th>Alerts</th><th></th></tr></thead>
+          <tbody id="player-table"></tbody>
+        </table>
+        <div id="player-pagination" class="pagination"></div>
+      </section>
+
+      <!-- Player detail (modal-style inside main) -->
+      <section id="page-player-detail" class="page">
+        <button class="btn-back" id="back-to-players">← Players</button>
+        <div id="player-detail-content"></div>
+      </section>
+
+      <!-- Logs -->
+      <section id="page-logs" class="page">
+        <h1 class="page-title">Event Logs</h1>
+        <div class="toolbar">
+          <select id="log-type-filter" class="input">
+            <option value="">All types</option>
+            <option value="money_alert">money_alert</option>
+            <option value="money_tx">money_tx</option>
+            <option value="multi_account_flag">multi_account_flag</option>
+            <option value="exploit_speed_hack">exploit_speed_hack</option>
+            <option value="exploit_teleport">exploit_teleport</option>
+            <option value="exploit_godmode_suspect">exploit_godmode_suspect</option>
+            <option value="exploit_rate">exploit_rate</option>
+            <option value="player_connect">player_connect</option>
+            <option value="player_drop">player_drop</option>
+            <option value="resource_perf">resource_perf</option>
+          </select>
+          <label class="check-label"><input type="checkbox" id="log-flagged-only" /> Flagged only</label>
+          <button class="btn" id="log-filter-btn">Filter</button>
+        </div>
+        <table class="table">
+          <thead><tr><th>Type</th><th>Player</th><th>Data</th><th>Time</th></tr></thead>
+          <tbody id="log-table"></tbody>
+        </table>
+        <div id="log-pagination" class="pagination"></div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- Live alert toast (outside #root so it shows even when panel is closed) -->
+  <div id="toast-container"></div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

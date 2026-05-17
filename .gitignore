@@ -1,0 +1,11 @@
+# Internal development files
+docs/
+
+# Obsidian vault config
+.obsidian/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
