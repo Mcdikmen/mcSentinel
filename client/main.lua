@@ -30,40 +30,51 @@ AddEventHandler('playerSpawned', function()
     lastHealth  = nil
 end)
 
+-- Dedicated high-frequency speed check (100ms).
+-- Requires 3 consecutive violations before reporting to eliminate false positives.
+CreateThread(function()
+    local violations = 0
+    while true do
+        Wait(100)
+        if not _token then violations = 0 goto spd_continue end
+
+        local ped   = PlayerPedId()
+        local inVeh = IsPedInAnyVehicle(ped, false) or GetVehiclePedIsIn(ped, true) ~= 0
+
+        if not inVeh and GetEntitySpeed(ped) > Config.Thresholds.speedOnFoot then
+            violations = violations + 1
+            if violations >= 3 then
+                local pos = GetEntityCoords(ped)
+                TriggerServerEvent('mcSentinel:exploitReport', _token, 'speed_hack', {
+                    speed = GetEntitySpeed(ped),
+                    pos   = { x = pos.x, y = pos.y, z = pos.z },
+                })
+                violations = 0
+                Wait(5000) -- cooldown to avoid spam after a confirmed report
+            end
+        else
+            violations = 0
+        end
+        ::spd_continue::
+    end
+end)
+
+-- Main anomaly loop: teleport + godmode (1s tick is sufficient for these).
 CreateThread(function()
     while true do
-        -- Idle until we have a valid token from the server.
-        if not _token then
-            Wait(1000)
-            goto continue
-        end
+        Wait(1000)
+        if not _token then goto main_continue end
 
         local ped    = PlayerPedId()
         local health = GetEntityHealth(ped)
+        local pos    = GetEntityCoords(ped)
         local inVeh  = IsPedInAnyVehicle(ped, false) or GetVehiclePedIsIn(ped, true) ~= 0
-
-        -- Speed check (on-foot only)
-        if not inVeh then
-            local speed = GetEntitySpeed(ped)
-            if speed > Config.Thresholds.speedOnFoot then
-                local pos = GetEntityCoords(ped)
-                TriggerServerEvent('mcSentinel:exploitReport', _token, 'speed_hack', {
-                    speed = speed,
-                    pos   = { x = pos.x, y = pos.y, z = pos.z },
-                })
-                Wait(1000)
-                goto continue
-            end
-        end
-
-        local pos = GetEntityCoords(ped)
 
         if justSpawned then
             justSpawned = false
             lastPos     = pos
             lastHealth  = health
-            Wait(1000)
-            goto continue
+            goto main_continue
         end
 
         -- Teleport check (on-foot only)
@@ -91,13 +102,6 @@ CreateThread(function()
         lastPos    = pos
         lastHealth = health
 
-        -- Dynamic wait: sleep longer when health is full and player hasn't moved much
-        -- (reduces unnecessary wakeups while still catching anomalies quickly).
-        local sleepTime = 1000
-        if lastPos and #(pos - lastPos) < 1.0 and health >= maxHealth then
-            sleepTime = 2000
-        end
-        Wait(sleepTime)
-        ::continue::
+        ::main_continue::
     end
 end)
