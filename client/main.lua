@@ -4,7 +4,8 @@ local CreateThread       = CreateThread
 local PlayerPedId        = PlayerPedId
 local GetEntityCoords    = GetEntityCoords
 local GetEntityHealth    = GetEntityHealth
-local GetEntitySpeed     = GetEntitySpeed
+local GetEntitySpeed    = GetEntitySpeed
+local GetEntityVelocity = GetEntityVelocity
 local GetPedMaxHealth    = GetPedMaxHealth
 local IsPedInAnyVehicle  = IsPedInAnyVehicle
 local GetVehiclePedIsIn  = GetVehiclePedIsIn
@@ -31,7 +32,8 @@ AddEventHandler('playerSpawned', function()
 end)
 
 -- Dedicated high-frequency speed check (100ms).
--- Requires 3 consecutive violations before reporting to eliminate false positives.
+-- Checks both horizontal speed and vertical velocity (Z) to catch superjump.
+-- Requires 2 consecutive violations before reporting to eliminate false positives.
 CreateThread(function()
     local violations = 0
     while true do
@@ -41,19 +43,25 @@ CreateThread(function()
         local ped   = PlayerPedId()
         local inVeh = IsPedInAnyVehicle(ped, false) or GetVehiclePedIsIn(ped, true) ~= 0
 
-        if not inVeh and GetEntitySpeed(ped) > Config.Thresholds.speedOnFoot then
-            violations = violations + 1
-            if violations >= 3 then
-                local pos = GetEntityCoords(ped)
-                TriggerServerEvent('mcSentinel:exploitReport', _token, 'speed_hack', {
-                    speed = GetEntitySpeed(ped),
-                    pos   = { x = pos.x, y = pos.y, z = pos.z },
-                })
+        if not inVeh then
+            local speed  = GetEntitySpeed(ped)
+            local vel    = GetEntityVelocity(ped)
+            local zSpeed = math.abs(vel.z)
+            if speed > Config.Thresholds.speedOnFoot or zSpeed > Config.Thresholds.speedOnFoot then
+                violations = violations + 1
+                if violations >= 2 then
+                    local pos = GetEntityCoords(ped)
+                    TriggerServerEvent('mcSentinel:exploitReport', _token, 'speed_hack', {
+                        speed  = speed,
+                        zSpeed = zSpeed,
+                        pos    = { x = pos.x, y = pos.y, z = pos.z },
+                    })
+                    violations = 0
+                    Wait(5000)
+                end
+            else
                 violations = 0
-                Wait(5000) -- cooldown to avoid spam after a confirmed report
             end
-        else
-            violations = 0
         end
         ::spd_continue::
     end
