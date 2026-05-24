@@ -272,6 +272,10 @@ CreateThread(function()
     PerformHttpRequest(
         'https://api.github.com/repos/Mcdikmen/mcSentinel/releases/latest',
         function(status, body)
+            if status == 404 then
+                print('^2[mcSentinel]^0 v' .. _currentVersion .. ' — no releases published yet')
+                return
+            end
             if status ~= 200 then
                 print('^3[mcSentinel]^0 Update check failed (HTTP ' .. tostring(status) .. ')')
                 return
