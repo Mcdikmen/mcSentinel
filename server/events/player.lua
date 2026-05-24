@@ -1,8 +1,29 @@
 -- Tracks player connections and sessions via Qbox events.
+-- Also manages per-session security tokens used to authenticate client exploit reports.
 
 local recentLoginsByIp = {}
 
--- Fires when a player fully loads into the server via qbx_core.
+-- ─── Token system ─────────────────────────────────────────────────────────────
+
+local playerTokens = {} -- [src] = token string
+
+local function generateToken()
+    local chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    local t = {}
+    for i = 1, 40 do
+        t[i] = chars:sub(math.random(1, #chars), math.random(1, #chars))
+    end
+    return table.concat(t)
+end
+
+-- Called by exploit.lua to validate a token accompanying a client report.
+function ValidateClientToken(src, token)
+    if type(token) ~= 'string' or #token ~= 40 then return false end
+    return playerTokens[src] ~= nil and playerTokens[src] == token
+end
+
+-- ─── Player load / drop ───────────────────────────────────────────────────────
+
 AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
     local src = player.PlayerData.source
     local identifiers = {}
@@ -19,9 +40,13 @@ AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
         end
     end
 
-    -- Use license2 as primary key if available, fall back to license
     if not license then license = license2 end
     if not license then return end
+
+    -- Issue session token for this player
+    local token = generateToken()
+    playerTokens[src] = token
+    TriggerClientEvent('mcSentinel:init', src, token)
 
     local name = GetPlayerName(src)
     local now  = os.time()
@@ -44,6 +69,8 @@ end)
 
 AddEventHandler('playerDropped', function(reason)
     local src = source
+    playerTokens[src] = nil
+
     local license = nil
     for i = 0, GetNumPlayerIdentifiers(src) - 1 do
         local id = GetPlayerIdentifier(src, i)

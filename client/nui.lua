@@ -23,12 +23,14 @@ end)
 
 -- Data request from NUI
 RegisterNUICallback('requestData', function(data, cb)
+    if type(data) ~= 'table' then cb('err') return end
     TriggerServerEvent('mcSentinel:requestData', data.query, data.params)
     cb('ok')
 end)
 
 -- Note submission from NUI
 RegisterNUICallback('addNote', function(data, cb)
+    if type(data) ~= 'table' then cb('err') return end
     TriggerServerEvent('mcSentinel:addNote', data.playerId, data.note)
     cb('ok')
 end)
@@ -46,13 +48,13 @@ CreateThread(function()
     SendNUIMessage({ action = 'initConfig', toast = Config.Toast })
 end)
 
--- Live alert — show toast even if panel is closed
+-- Live alert — show toast even when panel is closed
 RegisterNetEvent('mcSentinel:liveAlert', true)
 AddEventHandler('mcSentinel:liveAlert', function(alert)
     SendNUIMessage({ action = 'liveAlert', data = alert })
 end)
 
--- Toggle panel with `sentinel` command (default keybind: F8)
+-- Toggle panel with /sentinel command (default keybind: F8)
 RegisterCommand('sentinel', function()
     if isOpen then
         isOpen = false

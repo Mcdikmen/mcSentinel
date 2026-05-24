@@ -20,25 +20,28 @@ function Sentinel_Push(eventType, playerId, data, flagged)
         flagged   = flagged or false,
     }
 
-    -- Broadcast flagged events to all open admin panels instantly.
-    -- Strip sensitive fields (ip) before sending to all clients.
     if flagged then
         local serverSrc = playerId and OnlineMap[playerId] or nil
         local safeData  = {}
         for k, v in pairs(data) do
             if k ~= 'ip' then safeData[k] = v end
         end
-        TriggerClientEvent('mcSentinel:liveAlert', -1, {
+
+        local alert = {
             type      = eventType,
             player_id = playerId,
             server_id = serverSrc,
             data      = safeData,
-        })
+        }
+
+        -- Broadcast only to confirmed admin sources, never to all clients.
+        for adminSrc in pairs(AdminSources) do
+            TriggerClientEvent('mcSentinel:liveAlert', adminSrc, alert)
+        end
 
         if Config.DiscordWebhook ~= '' then
             local playerName = data.name or ('ID:' .. tostring(playerId))
             local tpl = Config.DiscordMessages[eventType] or Config.DiscordMessages.default
-            -- Exploit events nest their payload under `detail`; money/other events are flat.
             local d   = data.detail or data
             local pos = d.pos or {}
             local desc = tpl
@@ -98,11 +101,16 @@ CreateThread(function()
     end
 end)
 
--- NUI data request handler
+-- ─── NUI data request handler ─────────────────────────────────────────────────
+
+local ALLOWED_QUERIES = { overview = true, players = true, player_detail = true, logs = true }
+
 RegisterNetEvent('mcSentinel:requestData', true)
 AddEventHandler('mcSentinel:requestData', function(query, params)
     local src = source
     if not IsPlayerAdmin(src) then return end
+    if type(query) ~= 'string' or not ALLOWED_QUERIES[query] then return end
+    params = type(params) == 'table' and params or {}
 
     if query == 'overview' then
         MySQL.query([[
@@ -128,8 +136,8 @@ AddEventHandler('mcSentinel:requestData', function(query, params)
         end)
 
     elseif query == 'players' then
-        local search = (params and params.search) or ''
-        local page   = (params and params.page) or 1
+        local search = type(params.search) == 'string' and params.search:sub(1, 64) or ''
+        local page   = type(params.page)   == 'number' and math.max(1, math.floor(params.page)) or 1
         local offset = (page - 1) * 25
         MySQL.query([[
             SELECT p.id, p.name, p.license, p.ip, p.updated_at,
@@ -160,8 +168,8 @@ AddEventHandler('mcSentinel:requestData', function(query, params)
         end)
 
     elseif query == 'player_detail' then
-        local pid = params and params.id
-        if not pid then return end
+        local pid = type(params.id) == 'number' and math.floor(params.id) or nil
+        if not pid or pid < 1 then return end
         MySQL.query('SELECT * FROM sentinel_players WHERE id = ?', { pid }, function(p)
             if not p or not p[1] then return end
             local license = p[1].license
@@ -177,12 +185,12 @@ AddEventHandler('mcSentinel:requestData', function(query, params)
                                 if qbp then onlineCharId = qbp.PlayerData.citizenid end
                             end
                             TriggerClientEvent('mcSentinel:dataResponse', src, 'player_detail', {
-                                player        = p[1],
-                                events        = evs   or {},
-                                sessions      = sess  or {},
-                                notes         = notes or {},
-                                characters    = chars or {},
-                                onlineCharId  = onlineCharId,
+                                player       = p[1],
+                                events       = evs   or {},
+                                sessions     = sess  or {},
+                                notes        = notes or {},
+                                characters   = chars or {},
+                                onlineCharId = onlineCharId,
                             })
                         end)
                     end)
@@ -191,9 +199,9 @@ AddEventHandler('mcSentinel:requestData', function(query, params)
         end)
 
     elseif query == 'logs' then
-        local filter  = params and params.filter  or ''
-        local flagged = params and params.flagged or false
-        local page    = (params and params.page) or 1
+        local filter  = type(params.filter)  == 'string'  and params.filter:sub(1, 32) or ''
+        local flagged = params.flagged == true
+        local page    = type(params.page) == 'number' and math.max(1, math.floor(params.page)) or 1
         local offset  = (page - 1) * 50
         local sqlParams = {}
         local where = 'WHERE 1=1'
@@ -219,19 +227,24 @@ AddEventHandler('mcSentinel:requestData', function(query, params)
     end
 end)
 
--- Admin note submission
+-- ─── Admin note submission ────────────────────────────────────────────────────
+
 RegisterNetEvent('mcSentinel:addNote', true)
 AddEventHandler('mcSentinel:addNote', function(playerId, note)
     local src = source
     if not IsPlayerAdmin(src) then return end
+    if type(playerId) ~= 'number' or playerId < 1 then return end
+    if type(note) ~= 'string' or #note == 0 then return end
+    note = note:sub(1, 1000)
     local adminName = GetPlayerName(src)
     MySQL.insert('INSERT INTO sentinel_notes (player_id, admin, note) VALUES (?, ?, ?)',
-        { playerId, adminName, note })
+        { math.floor(playerId), adminName, note })
 end)
 
--- Populate OnlineMap for players already in-game when the resource starts/restarts.
+-- ─── Populate OnlineMap for players already in-game on resource restart ───────
+
 CreateThread(function()
-    Wait(1500) -- wait for DB bootstrap and admin load
+    Wait(1500)
     local players = GetPlayers()
     for _, src in ipairs(players) do
         src = tonumber(src)
@@ -250,7 +263,8 @@ end)
 
 print('^2[mcSentinel]^0 Started')
 
--- Version update checker
+-- ─── Async update checker ─────────────────────────────────────────────────────
+
 local _currentVersion = GetResourceMetadata(GetCurrentResourceName(), 'version', 0) or '1.0.0'
 
 CreateThread(function()
@@ -269,10 +283,17 @@ CreateThread(function()
             end
             local latest = data.tag_name:gsub('^v', '')
             if latest == _currentVersion then
-                print('^2[mcSentinel]^0 Up to date (v' .. _currentVersion .. ')')
+                print('^2[mcSentinel]^0 Up to date — v' .. _currentVersion)
             else
-                print('^3[mcSentinel]^0 Update available: v' .. latest .. ' -> https://github.com/Mcdikmen/mcSentinel/releases/latest')
-                print('^3[mcSentinel]^0 Current version: v' .. _currentVersion)
+                print('')
+                print('^3╔══════════════════════════════════════════╗^0')
+                print('^3║         mcSentinel — Update Available    ║^0')
+                print('^3╠══════════════════════════════════════════╣^0')
+                print('^3║  Current : ^1v' .. _currentVersion .. string.rep(' ', 28 - #_currentVersion) .. '^3║^0')
+                print('^3║  Latest  : ^2v' .. latest          .. string.rep(' ', 28 - #latest)          .. '^3║^0')
+                print('^3║  https://github.com/Mcdikmen/mcSentinel ║^0')
+                print('^3╚══════════════════════════════════════════╝^0')
+                print('')
             end
         end,
         'GET', '', { ['User-Agent'] = 'mcSentinel/' .. _currentVersion }

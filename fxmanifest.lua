@@ -1,10 +1,12 @@
 fx_version 'cerulean'
 game 'gta5'
 
-name 'mcSentinel'
-description 'FiveM admin monitoring system — NUI + oxmysql'
-version '1.0.0'
-author 'Mcdikmen'
+name        'mcSentinel'
+description 'FiveM anti-cheat & admin monitoring system — NUI + oxmysql'
+version     '1.0.0'
+author      'Mcdikmen'
+url         'https://github.com/Mcdikmen/mcSentinel'
+repository  'https://github.com/Mcdikmen/mcSentinel'
 
 lua54 'yes'
 
@@ -20,8 +22,11 @@ shared_scripts {
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/db.lua',
+    'server/events/admin.lua',
+    'server/events/player.lua',
+    'server/events/exploit.lua',
+    'server/events/money.lua',
     'server/main.lua',
-    'server/events/*.lua',
 }
 
 client_scripts {

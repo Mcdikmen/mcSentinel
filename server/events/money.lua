@@ -10,10 +10,26 @@ local function getLicense(src)
     return fallback
 end
 
-local function handleMoneyChange(src, moneyType, amount, actionType, reason)
-    amount = tonumber(amount) or 0
-    local flagged = math.abs(amount) >= Config.Thresholds.moneyDelta
+local VALID_MONEY_TYPES   = { cash = true, bank = true, crypto = true }
+local VALID_ACTION_TYPES  = { add = true, remove = true, set = true }
 
+local function handleMoneyChange(src, moneyType, amount, actionType, reason)
+    -- Strict type validation — this is a server-to-server event from QBCore,
+    -- but we still sanitise in case of unexpected calls.
+    amount     = tonumber(amount) or 0
+    moneyType  = type(moneyType)  == 'string' and moneyType  or 'unknown'
+    actionType = type(actionType) == 'string' and actionType or 'unknown'
+    reason     = type(reason)     == 'string' and reason:sub(1, 255) or 'none'
+
+    -- Warn but still log if unexpected type is seen (could indicate a new QBCore release).
+    if not VALID_MONEY_TYPES[moneyType] then
+        moneyType = 'unknown:' .. moneyType:sub(1, 16)
+    end
+    if not VALID_ACTION_TYPES[actionType] then
+        actionType = 'unknown:' .. actionType:sub(1, 16)
+    end
+
+    local flagged = math.abs(amount) >= Config.Thresholds.moneyDelta
     local license = getLicense(src)
     if not license then return end
 
@@ -26,7 +42,7 @@ local function handleMoneyChange(src, moneyType, amount, actionType, reason)
                 amount     = amount,
                 actionType = actionType,
                 moneyType  = moneyType,
-                reason     = reason or 'none',
+                reason     = reason,
             },
             flagged
         )

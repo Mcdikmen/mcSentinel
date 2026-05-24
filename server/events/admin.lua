@@ -1,5 +1,9 @@
 -- Ace-based admin check + in-game permission management.
 
+-- Tracks which server source IDs currently have admin access.
+-- Used by Sentinel_Push to broadcast live alerts only to admins.
+AdminSources = {}
+
 local function getLicense(src)
     local fallback = nil
     for i = 0, GetNumPlayerIdentifiers(src) - 1 do
@@ -22,22 +26,42 @@ function IsPlayerAdmin(src)
     return IsPlayerAceAllowed(src, 'mcSentinel.admin')
 end
 
--- Apply ace permissions to all admins stored in DB on resource start.
+-- Rebuild AdminSources and apply ace permissions for all stored admins on resource start.
 CreateThread(function()
-    Wait(1000) -- wait for DB bootstrap
+    Wait(1000)
     MySQL.query('SELECT license FROM sentinel_admins', {}, function(rows)
         if not rows then return end
         for _, row in ipairs(rows) do
             applyAce(row.license)
         end
+        -- Populate AdminSources for players already online when resource restarts.
+        for _, src in ipairs(GetPlayers()) do
+            src = tonumber(src)
+            if IsPlayerAceAllowed(src, 'mcSentinel.admin') then
+                AdminSources[src] = true
+            end
+        end
         print('^2[mcSentinel]^0 ' .. #rows .. ' admin(s) loaded from DB')
     end)
+end)
+
+-- Keep AdminSources in sync when a player is confirmed admin via the panel command.
+-- (Also fired from sentineladd after applyAce runs.)
+AddEventHandler('mcSentinel:internal:adminGranted', function(src)
+    if IsPlayerAceAllowed(src, 'mcSentinel.admin') then
+        AdminSources[src] = true
+    end
+end)
+
+AddEventHandler('playerDropped', function()
+    AdminSources[source] = nil
 end)
 
 RegisterNetEvent('mcSentinel:checkAdmin', true)
 AddEventHandler('mcSentinel:checkAdmin', function()
     local src = source
     if IsPlayerAdmin(src) then
+        AdminSources[src] = true
         TriggerClientEvent('mcSentinel:adminConfirmed', src)
     end
 end)
@@ -67,6 +91,7 @@ RegisterCommand('sentineladd', function(src, args)
     MySQL.query('INSERT IGNORE INTO sentinel_admins (license, name, granted_by) VALUES (?, ?, ?)',
         { targetLicense, targetName, grantedBy }, function()
             applyAce(targetLicense)
+            AdminSources[targetId] = true
             print('[mcSentinel] Admin added: ' .. targetName .. ' (' .. targetLicense .. ') by ' .. grantedBy)
             if src ~= 0 then
                 TriggerClientEvent('chat:addMessage', src, { args = { '[mcSentinel]', targetName .. ' is now an admin.' } })
@@ -97,6 +122,7 @@ RegisterCommand('sentinelremove', function(src, args)
 
     MySQL.query('DELETE FROM sentinel_admins WHERE license = ?', { targetLicense }, function()
         removeAce(targetLicense)
+        AdminSources[targetId] = nil
         print('[mcSentinel] Admin removed: ' .. tostring(targetName) .. ' (' .. targetLicense .. ')')
         if src ~= 0 then
             TriggerClientEvent('chat:addMessage', src, { args = { '[mcSentinel]', tostring(targetName) .. ' admin access revoked.' } })

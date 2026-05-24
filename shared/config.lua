@@ -1,6 +1,6 @@
 Config = {}
 
--- Qbox group names that are treated as admin (legacy, ace permission system is used instead)
+-- Qbox group names that are treated as admin (legacy reference; ace permission system is authoritative)
 Config.AdminGroups = { 'admin', 'superadmin', 'god' }
 
 -- Discord webhook URL (leave empty to disable)
@@ -71,8 +71,6 @@ Config.CharacterFields = {
 Config.Toast = {
     enabled  = true,   -- set to false to disable all toasts
     duration = 6000,   -- how long each toast stays on screen (ms)
-    -- Message templates per event type. Same variables as DiscordMessages.
-    -- {player} is always available.
     messages = {
         exploit_speed_hack      = '🚨 Speed Hack Detected\n👤 {player} [ID:{server_id}]  💨 {speed} m/s',
         exploit_teleport        = '🚨 Teleport Detected\n👤 {player} [ID:{server_id}]  📏 {dist} m',
