@@ -32,10 +32,10 @@ jobs:
           body: |
             ## mcSentinel ${{ github.ref_name }}
 
-            ### Kurulum
-            1. `mcSentinel.zip` dosyasını indirin ve `resources/[standalone]/` klasörüne çıkartın.
-            2. `server.cfg` dosyanıza `ensure mcSentinel` ekleyin (`qbx_core` ve `oxmysql`'den sonra).
-            3. `shared/config.lua` içinden Discord webhook ve eşik değerlerini ayarlayın.
+            ### Installation
+            1. Download `mcSentinel.zip` and extract it into your `resources/[standalone]/` folder.
+            2. Add `ensure mcSentinel` to your `server.cfg` (after `qbx_core` and `oxmysql`).
+            3. Configure your Discord webhook and thresholds in `shared/config.lua`.
           files: dist/mcSentinel.zip
           draft: false
           prerelease: false
