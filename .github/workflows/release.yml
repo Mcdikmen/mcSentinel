@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create release zip
+        run: |
+          mkdir -p dist
+          zip -r dist/mcSentinel.zip . \
+            --exclude "*.git*" \
+            --exclude ".github/*" \
+            --exclude ".obsidian/*" \
+            --exclude "docs/*" \
+            --exclude "dist/*"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "mcSentinel ${{ github.ref_name }}"
+          body: |
+            ## mcSentinel ${{ github.ref_name }}
+
+            ### Kurulum
+            1. `mcSentinel.zip` dosyasını indirin ve `resources/[standalone]/` klasörüne çıkartın.
+            2. `server.cfg` dosyanıza `ensure mcSentinel` ekleyin (`qbx_core` ve `oxmysql`'den sonra).
+            3. `shared/config.lua` içinden Discord webhook ve eşik değerlerini ayarlayın.
+          files: dist/mcSentinel.zip
+          draft: false
+          prerelease: false
