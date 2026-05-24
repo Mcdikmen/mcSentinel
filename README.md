@@ -6,7 +6,8 @@ A FiveM admin monitoring resource for **Qbox** (`qbx_core`) servers. Runs entire
 
 - **In-game admin dashboard** — Overview, Players, Logs, Player Detail panels (open with `F8` or `/sentinel`)
 - **Money monitoring** — Flags suspicious transactions above a configurable threshold
-- **Anti-cheat detection** — Speed hack, teleport, godmode suspect (client-side, 1 s tick)
+- **Anti-cheat detection** — Speed hack (including superjump via Z-velocity), teleport, godmode suspect; high-frequency 100 ms tick with multi-strike confirmation to eliminate false positives
+- **Secure event architecture** — Per-session server-issued tokens authenticate all client reports; unauthorized event triggers are silently discarded
 - **Rate limiting** — Detects event flooding from malicious clients
 - **Multi-account detection** — Same IP reconnecting within a configurable time window
 - **Live alert toasts** — In-game toast notifications for all flagged events (even when panel is closed)
@@ -182,7 +183,7 @@ sentineladd 1
 | `money_tx` | Money change below threshold | No |
 | `money_alert` | Money change above `moneyDelta` | Yes |
 | `multi_account_flag` | Same IP reconnects within `loginGapSeconds` | Yes |
-| `exploit_speed_hack` | On-foot speed > `speedOnFoot` | Yes |
+| `exploit_speed_hack` | On-foot speed or Z-velocity > `speedOnFoot` (100 ms tick, 2-strike) | Yes |
 | `exploit_teleport` | Position delta > `teleportDist` in one tick | Yes |
 | `exploit_godmode_suspect` | Health jumps > 50 pts to max while alive | Yes |
 | `exploit_rate` | More than `eventRate` exploit reports/second | Yes |
