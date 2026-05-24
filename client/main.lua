@@ -36,7 +36,6 @@ end)
 -- Requires 2 consecutive violations before reporting to eliminate false positives.
 CreateThread(function()
     local violations = 0
-    print('[mcSentinel DEBUG] speed thread started')
     while true do
         Wait(100)
         if not _token then violations = 0 goto spd_continue end
@@ -48,7 +47,6 @@ CreateThread(function()
             local speed  = GetEntitySpeed(ped)
             local vel    = GetEntityVelocity(ped)
             local zSpeed = math.abs(vel.z)
-            print(('[mcSentinel DEBUG] speed=%.2f zSpeed=%.2f violations=%d'):format(speed, zSpeed, violations))
             if speed > Config.Thresholds.speedOnFoot or zSpeed > Config.Thresholds.speedOnFoot then
                 violations = violations + 1
                 if violations >= 2 then
