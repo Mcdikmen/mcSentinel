@@ -11,7 +11,8 @@ local function generateToken()
     local chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
     local t = {}
     for i = 1, 40 do
-        t[i] = chars:sub(math.random(1, #chars), math.random(1, #chars))
+        local r = math.random(1, #chars)
+        t[i] = chars:sub(r, r)
     end
     return table.concat(t)
 end
