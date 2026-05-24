@@ -36,8 +36,10 @@ end)
 -- Requires 2 consecutive violations before reporting to eliminate false positives.
 CreateThread(function()
     local violations = 0
+    print('[mcSentinel DEBUG] speed thread started')
     while true do
         Wait(100)
+        print('[mcSentinel DEBUG] tick token=' .. tostring(_token))
         if not _token then violations = 0 goto spd_continue end
 
         local ped   = PlayerPedId()
