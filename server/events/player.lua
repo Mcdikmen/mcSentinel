@@ -22,6 +22,17 @@ function ValidateClientToken(src, token)
     return playerTokens[src] ~= nil and playerTokens[src] == token
 end
 
+-- Re-issue tokens to players already online when the resource restarts.
+CreateThread(function()
+    Wait(1000)
+    for _, src in ipairs(GetPlayers()) do
+        src = tonumber(src)
+        local token = generateToken()
+        playerTokens[src] = token
+        TriggerClientEvent('mcSentinel:init', src, token)
+    end
+end)
+
 -- ─── Player load / drop ───────────────────────────────────────────────────────
 
 AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
