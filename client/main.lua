@@ -45,8 +45,8 @@ CreateThread(function()
 
         if not inVeh then
             local speed  = GetEntitySpeed(ped)
-            local vx, vy, vz = GetEntityVelocity(ped)
-            local zSpeed = math.abs(vz)
+            local vel    = GetEntityVelocity(ped)
+            local zSpeed = math.abs(vel.z)
             if speed > Config.Thresholds.speedOnFoot or zSpeed > Config.Thresholds.speedOnFoot then
                 violations = violations + 1
                 if violations >= 2 then
